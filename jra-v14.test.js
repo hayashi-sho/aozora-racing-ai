@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {validateJraRace,freezeResearchSnapshot,verifyResearchSnapshot,evaluateDarkHorseAtK,assessModelRevision} from '../server/jra-quality-v14.js';
+const base={date:'2026-11-01',venue:'東京',race:11,surface:'芝',distance:2000,horses:[{number:1,name:'A'},{number:2,name:'B'},{number:3,name:'C'}],source:{name:'manual',observedAt:'2026-11-01T09:00:00+09:00'}};
+test('JRA valid race accepted as unverified',()=>{const r=validateJraRace(base);assert.equal(r.ok,true);assert.equal(r.verifiedByProvider,false)});
+test('local venue rejected',()=>assert.equal(validateJraRace({...base,venue:'園田'}).ok,false));
+test('duplicated horse number rejected',()=>assert.equal(validateJraRace({...base,horses:[{number:1,name:'A'},{number:1,name:'B'},{number:3,name:'C'}]}).ok,false));
+test('source timestamp required',()=>assert.equal(validateJraRace({...base,source:undefined}).ok,false));
+test('hash verifies exact snapshot and catches tampering',()=>{const s=freezeResearchSnapshot({x:1});assert.equal(verifyResearchSnapshot(s),true);assert.equal(verifyResearchSnapshot({...s,canonical:'{"x":2}'}),false)});
+test('underdog capture uses only actual recorded finish',()=>{const x=evaluateDarkHorseAtK([{finish:[2,3,1],candidates:[{number:1,odds:12,score:70}]}]);assert.equal(x.racesWithTop3Hit,1)});
+test('no false hit without result',()=>assert.equal(evaluateDarkHorseAtK([{candidates:[{number:1,odds:20,score:50}]}]).evaluatedRaces,0));
+test('model never auto deploys',()=>{const x=assessModelRevision({sampleCount:120,brier:.25,top3Recall:.5},{sampleCount:120,brier:.21,top3Recall:.55});assert.equal(x.passesNumericalScreen,true);assert.equal(x.autoDeploy,false)});

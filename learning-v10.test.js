@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {trainAndBacktest,validateRows,modelComparison,analyzeFailure,gateLabStatus} from '../server/learning-v10.js';
+const rows=[];for(let i=0;i<70;i++){let date='2026-'+String(1+Math.floor(i/8)).padStart(2,'0')+'-'+String(1+i%8).padStart(2,'0');for(let j=1;j<=6;j++)rows.push({raceId:'r'+i,horseId:'h'+j,date,region:'JRA',odds:j+3,outcomeFinish:j,features:{form:(7-j)/7,pace:.5,distanceFit:.7,groundFit:.7,classFit:.6,adversity:.2,weightFit:.5,drawFit:.5},source:'synthetic'})}
+test('rejects invalid labels and duplicate runners',()=>{assert.throws(()=>validateRows([rows[0],rows[0]]));assert.throws(()=>validateRows([{...rows[0],features:{}}]))});
+test('JRA and LOCAL isolated',()=>{assert.throws(()=>trainAndBacktest(rows,'LOCAL'))});
+test('time separated backtest auditable',()=>{const r=trainAndBacktest(rows,'JRA');assert.equal(r.region,'JRA');assert.equal(r.holdoutLocked,true);assert.ok(r.counts.testRaces>0);assert.ok(r.time.trainingThrough<r.time.validationThrough);assert.ok(r.time.validationThrough<r.time.testThrough);assert.ok(r.test.brier>=0)});
+test('no automatic deployment even with improvement',()=>{const r=trainAndBacktest(rows,'JRA');const c=modelComparison(r,{...r,test:{...r.test,brier:0}});assert.equal(c.promote,false)});
+test('strict gate always holds without independently validated feed',()=>{const r=trainAndBacktest(rows,'JRA');assert.equal(gateLabStatus(r).status,'HOLD')});
+test('failure audit does not silently change rules',()=>{assert.equal(analyzeFailure({predictedTop:[1],snapshotTime:'2026-10-01'},[2,3,4]).automaticRuleChange,false)});

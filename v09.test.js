@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {reverseHunter,reliabilityAudit,relationshipGraph,patternDiscovery,changes,nextStartWatch} from '../server/reverse-hunter.js';
+const race={date:'2026-11-01',venue:'東京',race:'11R',horses:[{number:1,name:'A',odds:15,paceScore:75,conditionScore:82,classFitScore:78,workoutScore:71,troubleRecoveryScore:85,form:'前走不利'},{number:2,name:'B',odds:2,form:'好走'}]};
+test('reverse ranked and HOLD',()=>{const a=reverseHunter(race);assert.equal(a.purchaseGate,'HOLD');assert.equal(a.ranked.length,2);assert.equal(a.ranked[0].number,1)});
+test('missing evidence is explicit',()=>assert.equal(reverseHunter(race).ranked[1].issues.length>0,true));
+test('pace branch alters score',()=>assert.notEqual(reverseHunter(race).ranked[0].revisedScore,reverseHunter(race,{pace:'slow'}).ranked[0].revisedScore));
+test('reliability audit does not imply official verification',()=>assert.equal(reliabilityAudit(race).verifiedByOfficialFeed,false));
+test('network creates only co-runner links',()=>assert.equal(relationshipGraph([{horses:race.horses}]).edges.length,1));
+test('pattern small sample is not accepted',()=>assert.equal(patternDiscovery([{hit:true,features:['x']}])[0].usable,false));
+test('change audit records diff',()=>assert.equal(changes({a:1},{a:2}).changes.length,1));
+test('watch never pretends push exists',()=>assert.equal(nextStartWatch('A','芝').automaticRaceMatching,false));

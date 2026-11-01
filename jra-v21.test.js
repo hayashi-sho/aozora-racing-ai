@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {auditV21,temporalSplit,evaluateResearchV21,challengerReviewV21,freshnessGateV21} from '../server/jra-v21.js';
+const make=(date,i)=>({region:'JRA',surface:'芝',raceId:'TEST-'+i,date,venue:'東京',observedAt:date+'T10:00:00+09:00',postTime:date+'T15:00:00+09:00',source:'許諾されたテストデータ',horses:[{number:1,finish:1,odds:2,seatWeights:[.5,.2,.2]},{number:2,finish:2,odds:12,seatWeights:[.3,.5,.3]},{number:3,finish:3,odds:15,seatWeights:[.2,.3,.5]}]});
+const rows=Array.from({length:10},(_,i)=>make('2026-10-'+String(i+1).padStart(2,'0'),i));const lic={commercialUseAuthorized:true,provider:'Contract Test Provider',termsReference:'TEST CONTRACT 001'};
+test('authorized JRA source audit',()=>assert.equal(auditV21(rows,lic).races.length,10));
+test('reject missing license',()=>assert.throws(()=>auditV21(rows,{})));
+test('reject non JRA venue',()=>assert.throws(()=>auditV21([{...rows[0],venue:'園田'}],lic)));
+test('date disjoint time splits',()=>{const s=temporalSplit(rows);assert.equal(Object.values(s.stages).reduce((n,r)=>n+r.length,0),10);assert(s.stages.train.at(-1).date<s.stages.validation[0].date)});
+test('out of sample metrics include 3 tickets',()=>{const r=evaluateResearchV21(rows);assert.equal(r.sections.test.races,2);assert('24'in r.sections.test.trifecta);assert.equal(r.gate,'HOLD')});
+test('challenger never auto deploys',()=>{const r=challengerReviewV21(rows,rows);assert.equal(r.autoPromote,false);assert.equal(r.decision,'HOLD')});
+test('no purchase permission from a historical feed',()=>assert.equal(freshnessGateV21(rows).gate,'HOLD'));

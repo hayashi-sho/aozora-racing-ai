@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {auditDataset,rankRace,exactaTrifectaCandidates,benchmarkRegions,compareAndStage,analyzeOutcome,releaseReadiness,scheduleResearch} from '../server/ability-v13.js';
+const mk=(n=34,region='JRA')=>Array.from({length:n},(_,i)=>Array.from({length:5},(_,h)=>({raceId:`r${i}`,horseId:`h${h}`,date:new Date(Date.UTC(2025,0,i+1)).toISOString().slice(0,10),region,outcomeFinish:h+1,odds:2+h*5,featureTime:new Date(Date.UTC(2024,11,i+1)).toISOString(),features:Object.fromEntries(['form','pace','distanceFit','groundFit','classFit','adversity','weightFit','drawFit'].map(k=>[k,.25+h*.1]))}))).flat();
+test('audited source and digest',()=>{const a=auditDataset(mk());assert.equal(a.ok,true);assert.equal(a.counts.races,34);assert.equal(a.sha256.length,64)});
+test('reject duplicate ranks',()=>{let r=mk();r[1].outcomeFinish=1;assert.equal(auditDataset(r).ok,false)});
+test('train JRA only with holdout',()=>{const x=benchmarkRegions(mk());assert.equal(x.status,'RESEARCH_ONLY');assert.ok(x.models.JRA.test);assert.equal(x.models.LOCAL,undefined)});
+test('model ranking is normalized',()=>{const r=mk().slice(0,5);const x=rankRace(r,{region:'JRA',weights:Array(9).fill(.1)});assert.ok(Math.abs(x.reduce((s,v)=>s+v.estimatedShare,0)-1)<1e-8)});
+test('trifecta unique and capped',()=>{const x=rankRace(mk().slice(0,5),{region:'JRA',weights:Array(9).fill(.1)});const t=exactaTrifectaCandidates(x,12);assert.equal(t.tickets.length,12);assert.equal(t.purchaseAllowed,false);assert.ok(t.tickets.every(v=>new Set(v.selection).size===3))});
+test('region mix rejected',()=>assert.throws(()=>rankRace(mk().slice(0,5),{region:'LOCAL',weights:Array(9).fill(0)})));
+test('no auto-promote',()=>assert.equal(compareAndStage({test:{brier:.3,topOneHitRate:.1},region:'JRA'},{test:{brier:.2,topOneHitRate:.2},region:'JRA'}).promote,false));
+test('hold release readiness',()=>assert.equal(releaseReadiness().status,'HOLD'));
+test('shadow schedule only',()=>assert.equal(scheduleResearch({lastTrainingDate:'2026-01-01',nowDate:'2026-03-01'}).automaticDeployment,false));
+test('failure needs snapshot',()=>assert.equal(analyzeOutcome({},[1,2,3]).status,'INSUFFICIENT_EVIDENCE'));

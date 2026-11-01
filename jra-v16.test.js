@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {measureRaces,compareModels} from '../server/jra-measurement-v16.js';
+const make=(n=1)=>({raceId:'T'+n,date:'2026-11-01',region:'JRA',source:'authorized-test',observedAt:'2026-11-01T10:00:00+09:00',postTime:'2026-11-01T15:00:00+09:00',horses:[{number:1,finish:1,winProbability:.6,odds:2},{number:2,finish:2,winProbability:.25,odds:15},{number:3,finish:3,winProbability:.15,odds:12}]});
+test('outsider recall and 3-trifecta top1',()=>{const x=measureRaces([make()],{topK:3,ticketCounts:[1]});assert.equal(x.outsiderTopKRecall,1);assert.equal(x.trifectaByPoints[1].hitRate,1)});
+test('ROI must be null if payout unavailable',()=>assert.equal(measureRaces([make()]).trifectaByPoints[12].roiPct,null));
+test('payout ROI uses actual payout only',()=>{const a=make();a.trifectaPayoutYen=2400;assert.equal(measureRaces([a],{ticketCounts:[1]}).trifectaByPoints[1].roiPct,2400)});
+test('reject future information',()=>{const a=make();a.observedAt=a.postTime;assert.throws(()=>measureRaces([a]))});
+test('reject invalid probability mass',()=>{const a=make();a.horses[0].winProbability=.7;assert.throws(()=>measureRaces([a]))});
+test('only matching race sets compare',()=>assert.throws(()=>compareModels([make(1)],[make(2)])));
+test('never auto promote',()=>assert.equal(compareModels([make()],[make()]).autoPromote,false));
+test('reject non-JRA race',()=>{const a=make();a.region='NAR';assert.throws(()=>measureRaces([a]))});

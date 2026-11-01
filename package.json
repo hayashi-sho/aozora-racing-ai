@@ -1,0 +1,26 @@
+{
+  "name": "aozora-racing-ai",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "check": "node --check server/index.js && node --check server/engine.js && node --check public/app.js && node --check server/unique-features.js && node --check server/v07-features.js && node --check server/darkhorse-v08.js && node --check server/reverse-hunter.js && node --check server/learning-v10.js && node --check server/ability-v13.js && node --check server/jra-quality-v14.js && node --check public/jra-v14.js && node --check server/jra-v15.js && node --check public/jra-v15.js && node --check server/jra-measurement-v16.js && node --check public/jra-v16.js && node --check server/jra-v20.js && node --check public/jra-v20.js && node --check server/jra-v21.js && node --check public/jra-v21.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.7.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "stripe": "^17.6.0",
+    "zod": "^3.24.1"
+  }
+}

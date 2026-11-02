@@ -1,0 +1,7 @@
+AOZORA RACING AI v2.2 静的公開用
+GitHub Pages: ZIPを解凍し public 内の9ファイルをリポジトリの最上位に配置してください。
+既存8ファイルを上書きし、free-data.jsを追加。
+これは無料の手動/CSV取込機能です。JRA/netkeibaからの自動取得機能はありません。
+GitHub Pagesでは既存の /api/* サーバー機能は動きません。
+無料データ取込タブで入力検証、端末内保存、JSONバックアップが使えます。
+オッズ順位はAI予想ではなく、購入ゲートはHOLDです。
